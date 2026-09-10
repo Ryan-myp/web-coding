@@ -13,11 +13,19 @@ from typing import Dict, List, Optional
 
 # 页面配置
 st.set_page_config(
-    page_title="Web Coding - AI Agent",
+    page_title="Web Coding Agent",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# 自定义样式
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+{}
+</style>
+""".format(open(Path(__file__).parent / "static" / "styles.css").read()), unsafe_allow_html=True)
 
 # 路径设置
 BASE_DIR = Path(__file__).parent.parent
@@ -37,93 +45,203 @@ def main():
         st.session_state.runner = SkillRunner(st.session_state.registry)
     if 'messages' not in st.session_state:
         st.session_state.messages = []
-    if 'current_task' not in st.session_state:
-        st.session_state.current_task = None
     
-    # 侧边栏
-    st.sidebar.title("🤖 Web Coding")
-    st.sidebar.markdown("---")
+    # 渲染布局
+    render_layout()
+
+
+def render_layout():
+    """渲染主布局"""
+    col1, col2 = st.columns([260, 1])
     
-    # 已安装 Skills 列表
+    with col1:
+        render_sidebar()
+    
+    with col2:
+        render_main()
+
+
+def render_sidebar():
+    """渲染侧边栏"""
+    st.markdown("""
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="sidebar-logo">
+                <div class="sidebar-logo-icon">🤖</div>
+                <span class="sidebar-logo-text">Web Coding</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">导航</div>
+            <a href="#" class="sidebar-item active">
+                <span class="sidebar-item-icon">💬</span>
+                <span class="sidebar-item-text">对话</span>
+            </a>
+            <a href="#" class="sidebar-item">
+                <span class="sidebar-item-icon">📊</span>
+                <span class="sidebar-item-text">历史记录</span>
+            </a>
+            <a href="#" class="sidebar-item">
+                <span class="sidebar-item-icon">⚙️</span>
+                <span class="sidebar-item-text">设置</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">已安装 Skills</div>
+    """, unsafe_allow_html=True)
+    
+    # 动态添加 Skills
     skills = st.session_state.registry.list_skills()
-    st.sidebar.subheader("📦 已安装 Skills")
     for skill in skills:
         status = "✅" if skill.get("enabled") else "❌"
-        st.sidebar.markdown(f"{status} **{skill['name']}**")
+        st.markdown(f'''
+        <a href="#" class="sidebar-item">
+            <span class="sidebar-item-icon">{status}</span>
+            <span class="sidebar-item-text">{skill['name']}</span>
+        </a>
+        ''', unsafe_allow_html=True)
     
-    st.sidebar.markdown("---")
-    
-    # 快速操作
-    st.sidebar.subheader("⚡ 快速操作")
-    if st.sidebar.button("🛡️ 代码分析"):
-        st.session_state.current_task = "analyze"
-        st.rerun()
-    if st.sidebar.button("🔒 安全检查"):
-        st.session_state.current_task = "security"
-        st.rerun()
-    if st.sidebar.button("📋 PRD审查"):
-        st.session_state.current_task = "prd_review"
-        st.rerun()
-    
-    st.sidebar.markdown("---")
-    
-    # 清空对话
-    if st.sidebar.button("🗑️ 清空对话"):
-        st.session_state.messages = []
-        st.rerun()
-    
-    # 主内容区
-    st.title("🤖 Web Coding Agent")
-    st.markdown("输入你的需求，AI 将调用相应的 Skills 完成编码任务")
-    
-    # 显示对话历史
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-    
-    # 输入区
-    if prompt := st.chat_input("输入你的需求，例如：分析 biz-delivery 代码质量..."):
-        # 添加用户消息
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    st.markdown("""
+        </div>
         
-        # 生成 AI 回复
-        with st.chat_message("assistant"):
-            with st.spinner("正在处理..."):
-                response = process_task(prompt, st.session_state.runner, st.session_state.registry)
-                st.markdown(response)
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">快速操作</div>
+            <button class="sidebar-item" onclick="setPrompt('分析代码质量')">
+                <span class="sidebar-item-icon">🛡️</span>
+                <span class="sidebar-item-text">代码分析</span>
+            </button>
+            <button class="sidebar-item" onclick="setPrompt('检查安全漏洞')">
+                <span class="sidebar-item-icon">🔒</span>
+                <span class="sidebar-item-text">安全检查</span>
+            </button>
+            <button class="sidebar-item" onclick="setPrompt('审查 PRD')">
+                <span class="sidebar-item-icon">📋</span>
+                <span class="sidebar-item-text">PRD 审查</span>
+            </button>
+        </div>
         
+        <div class="sidebar-section" style="margin-top: auto;">
+            <button class="sidebar-item" onclick="clearChat()">
+                <span class="sidebar-item-icon">🗑️</span>
+                <span class="sidebar-item-text">清空对话</span>
+            </button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_main():
+    """渲染主内容区"""
+    # Header
+    st.markdown(f'''
+    <div class="header">
+        <div>
+            <div class="header-title">Web Coding Agent</div>
+            <div class="header-subtitle">输入你的需求，AI 将调用相应的 Skills 完成编码任务</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary">📤 导出</button>
+            <button class="btn btn-primary">✨ 新功能</button>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Chat Container
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    
+    # Quick Actions
+    st.markdown('''
+    <div class="quick-actions">
+        <span class="quick-action-chip" onclick="setPrompt('分析代码质量')">🛡️ 分析代码质量</span>
+        <span class="quick-action-chip" onclick="setPrompt('检查安全漏洞')">🔒 安全检查</span>
+        <span class="quick-action-chip" onclick="setPrompt('审查 PRD')">📋 PRD 审查</span>
+        <span class="quick-action-chip" onclick="setPrompt('列出所有 Skills')">📦 列出 Skills</span>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Messages
+    if st.session_state.messages:
+        for msg in st.session_state.messages:
+            render_message(msg)
+    else:
+        render_empty_state()
+    
+    # Input Area
+    render_input_area()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+def render_message(msg: dict):
+    """渲染单条消息"""
+    role_class = "message-user" if msg["role"] == "user" else "message-assistant"
+    avatar = "👤" if msg["role"] == "user" else "🤖"
+    role_name = "你" if msg["role"] == "user" else "Web Coding Agent"
+    
+    st.markdown(f'''
+    <div class="message {role_class}">
+        <div class="message-avatar">{avatar}</div>
+        <div class="message-content">
+            <div class="message-role">{role_name}</div>
+            <div class="message-text">{msg["content"]}</div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+
+def render_empty_state():
+    """渲染空状态"""
+    st.markdown('''
+    <div class="empty-state">
+        <div class="empty-state-icon">🤖</div>
+        <div class="empty-state-title">你好，我是 Web Coding Agent</div>
+        <div class="empty-state-subtitle">我可以帮你分析代码质量、检查安全漏洞、审查 PRD，或者管理你的 Skills</div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+
+def render_input_area():
+    """渲染输入区域"""
+    # 使用 Streamlit 的 chat_input
+    prompt = st.chat_input("输入你的需求，例如：分析 biz-delivery 代码质量...")
+    
+    if prompt:
+        # 处理用户输入
+        response = process_task(prompt)
+        
+        # 添加到会话历史
+        st.session_state.messages.append({"role": "user", "content": format_user_message(prompt)})
         st.session_state.messages.append({"role": "assistant", "content": response})
-    
-    # 显示当前任务详情
-    if st.session_state.current_task:
-        render_task_detail(st.session_state.current_task)
+        
+        # 重新渲染
+        st.rerun()
 
 
-def process_task(prompt: str, runner: SkillRunner, registry: SkillRegistry) -> str:
+def process_task(prompt: str) -> str:
     """处理任务"""
     prompt_lower = prompt.lower()
     
     # 检测意图
     if any(kw in prompt_lower for kw in ["代码质量", "分析代码", "检查代码", "code quality", "analyze"]):
-        return run_code_analysis(prompt, runner)
+        return run_code_analysis(prompt)
     elif any(kw in prompt_lower for kw in ["安全检查", "安全扫描", "security", "owasp"]):
-        return run_security_check(prompt, runner)
+        return run_security_check(prompt)
     elif any(kw in prompt_lower for kw in ["prd", "需求", "review", "审查"]):
         return run_prd_review(prompt)
-    elif any(kw in prompt_lower for kw in ["skill", "技能", "安装", "manage"]):
-        return run_skill_management(prompt, registry)
+    elif any(kw in prompt_lower for kw in ["skill", "技能", "安装", "manage", "list"]):
+        return run_skill_management()
+    elif any(kw in prompt_lower for kw in ["能做什么", "有什么功能", "capabilities", "help"]):
+        return generate_capabilities_response()
     else:
-        return generate_general_response(prompt, runner, registry)
+        return generate_default_response(prompt)
 
 
-def run_code_analysis(prompt: str, runner: SkillRunner) -> str:
+def run_code_analysis(prompt: str) -> str:
     """运行代码分析"""
-    # 从 prompt 提取路径
-    path = extract_path(prompt)
-    if not path:
-        path = str(Path.home() / "biz-delivery")
+    path = extract_path(prompt) or str(Path.home() / "biz-delivery")
+    runner = st.session_state.runner
     
     result = runner.analyze_directory(path, "python")
     
@@ -134,35 +252,41 @@ def run_code_analysis(prompt: str, runner: SkillRunner) -> str:
     summary = result.get('summary', {})
     findings = result.get('findings', [])
     
-    response = f"## 📊 代码质量分析结果\n\n"
-    response += f"**目标路径**: `{path}`\n\n"
-    response += f"**质量得分**: {score}/100\n\n"
-    response += f"**错误数**: {summary.get('errors', 0)} | **警告数**: {summary.get('warnings', 0)}\n\n"
+    response = f"""## 📊 代码质量分析结果
+
+**目标路径**: `{path}`
+
+**质量得分**: **{score}/100**
+
+**统计**: 错误 {summary.get('errors', 0)} | 警告 {summary.get('warnings', 0)}
+"""
     
     if findings:
-        response += "### 🔍 发现的问题\n\n"
+        response += "\n### 🔍 发现的问题\n\n"
         for f in findings[:5]:
             icon = "🔴" if f.get('severity') == 'error' else "🟡"
             response += f"- {icon} **{f.get('message', 'Unknown')}** (Line {f.get('line', '?')})\n"
     else:
-        response += "✅ 未发现重大问题!"
+        response += "\n✅ 未发现重大问题!"
     
     return response
 
 
-def run_security_check(prompt: str, runner: SkillRunner) -> str:
+def run_security_check(prompt: str) -> str:
     """运行安全检查"""
-    path = extract_path(prompt)
-    if not path:
-        path = str(Path.home() / "biz-delivery")
+    path = extract_path(prompt) or str(Path.home() / "biz-delivery")
+    runner = st.session_state.runner
     
     result = runner.run_security_check(path)
     
     if "error" in result:
         return f"❌ 检查失败: {result['error']}"
     
-    response = f"## 🔒 OWASP 安全检查结果\n\n"
-    response += f"**目标路径**: `{path}`\n\n"
+    response = f"""## 🔒 OWASP 安全检查结果
+
+**目标路径**: `{path}`
+
+"""
     
     for item in result.get('checks', []):
         icon = "✅" if item.get('passed') else "❌"
@@ -176,19 +300,25 @@ def run_security_check(prompt: str, runner: SkillRunner) -> str:
 
 def run_prd_review(prompt: str) -> str:
     """运行 PRD 审查"""
-    # 尝试从 biz-delivery 运行专家系统
     biz_delivery_path = Path("/Users/yanping.ma/biz-delivery")
     expert_script = biz_delivery_path / "scripts" / "expert_system.py"
     
     if not expert_script.exists():
         return "❌ biz-delivery skill 未找到，请先安装"
     
-    # 提取 PRD 内容
     prd_content = extract_prd_content(prompt)
     if not prd_content:
-        return "⚠️ 请提供 PRD 内容，例如：\\n\\n```\\n# 项目名称\\n\\n## 背景\\n...\\n\\n## 功能需求\\n...\\n```"
+        return """⚠️ 请提供 PRD 内容
+
+例如：
+```
+# 项目名称
+## 背景
+...
+## 功能需求
+...
+```"""
     
-    # 运行审查
     try:
         result = subprocess.run(
             ["python3", str(expert_script), "review", prd_content],
@@ -202,28 +332,26 @@ def run_prd_review(prompt: str) -> str:
         return f"❌ 审查异常: {str(e)}"
 
 
-def run_skill_management(prompt: str, registry: SkillRegistry) -> str:
+def run_skill_management() -> str:
     """运行 Skills 管理"""
+    registry = st.session_state.registry
     skills = registry.list_skills()
     
     response = "## 📦 已安装的 Skills\n\n"
     for s in skills:
         status = "✅ 启用" if s.get("enabled") else "❌ 禁用"
+        langs = s.get("metadata", {}).get("languages", [])
         response += f"- **{s['name']}** v{s.get('version', '?')} - {status}\n"
+        if langs:
+            response += f"  - 支持语言: {', '.join(langs)}\n"
         response += f"  - {s.get('description', 'N/A')}\n\n"
     
-    response += "---\n\n"
-    response += "💡 **提示**: 要安装新 Skill，请提供路径，例如：`安装 skill /path/to/skill`"
     return response
 
 
-def generate_general_response(prompt: str, runner: SkillRunner, registry: SkillRegistry) -> str:
-    """生成通用回复"""
-    prompt_lower = prompt.lower()
-    
-    # 检测是否询问可用技能
-    if any(kw in prompt_lower for kw in ["能做什么", "有什么功能", "可用技能", "capabilities"]):
-        return """## 🤖 Web Coding Agent 能力
+def generate_capabilities_response() -> str:
+    """生成能力说明"""
+    return """## 🤖 Web Coding Agent 能力
 
 我可以帮你完成以下编码任务：
 
@@ -248,9 +376,12 @@ def generate_general_response(prompt: str, runner: SkillRunner, registry: SkillR
 - "检查 /path/to/project 的安全漏洞"
 - "审查这个 PRD: ..."
 - "列出所有已安装的 Skills""
-    
-    # 默认回复
-        return f"收到你的需求: {prompt}"
+
+
+def generate_default_response(prompt: str) -> str:
+    """生成默认回复"""
+    return f"""收到你的需求: "{prompt}"
+
 我可以帮你：
 - 🛡️ **代码质量分析** - 调用 code-quality-guard
 - 🔒 **安全检查** - OWASP Top 10 扫描
@@ -263,36 +394,20 @@ def generate_general_response(prompt: str, runner: SkillRunner, registry: SkillR
 def extract_path(prompt: str) -> str:
     """从 prompt 提取路径"""
     import re
-    # 匹配 Unix 路径
     paths = re.findall(r'(/[^\\s]+)', prompt)
-    if paths:
-        return paths[0]
-    return ""
+    return paths[0] if paths else ""
 
 
 def extract_prd_content(prompt: str) -> str:
     """从 prompt 提取 PRD 内容"""
-    # 查找代码块中的内容
     import re
     code_blocks = re.findall(r'```[\s\S]*?```', prompt)
-    if code_blocks:
-        return code_blocks[0].replace('```', '').strip()
-    
-    # 如果没有代码块，返回整个 prompt
-    return prompt
+    return code_blocks[0].replace('```', '').strip() if code_blocks else prompt
 
 
-def render_task_detail(task_type: str):
-    """渲染任务详情"""
-    st.sidebar.markdown("---")
-    st.sidebar.markdown(f"### 当前任务: {task_type}")
-    
-    if task_type == "analyze":
-        st.info("🛡️ 代码分析任务已启动")
-    elif task_type == "security":
-        st.info("🔒 安全检查任务已启动")
-    elif task_type == "prd_review":
-        st.info("📋 PRD 审查任务已启动")
+def format_user_message(prompt: str) -> str:
+    """格式化用户消息"""
+    return f"<p>{prompt}</p>"
 
 
 if __name__ == "__main__":
