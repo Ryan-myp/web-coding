@@ -250,8 +250,7 @@ def generate_general_response(prompt: str, runner: SkillRunner, registry: SkillR
 - "列出所有已安装的 Skills""
     
     # 默认回复
-    return f"""收到你的需求: "{prompt}"
-
+        return f"收到你的需求: {prompt}"
 我可以帮你：
 - 🛡️ **代码质量分析** - 调用 code-quality-guard
 - 🔒 **安全检查** - OWASP Top 10 扫描
