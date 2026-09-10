@@ -711,24 +711,27 @@ def run_skill_management() -> str:
 
 
 def generate_capabilities() -> str:
-    return """## 🤖 我能做什么
-
-**代码质量**
-- 分析 Python/TypeScript/Go/Java/Rust/C#/PHP 代码
-- OWASP Top 10 安全检查
-- 提供修复建议
-
-**PRD 审查**
-- 专家级技术可行性评估
-- 业务价值分析
-
-**Skills 管理**
-- 查看已安装 Skills
-
-**使用示例**
-- "分析 /path/to/project 的代码质量"
-- "检查安全漏洞"
-- "审查这个 PRD: ...""""
+    lines = [
+        "## 🤖 我能做什么",
+        "",
+        "**代码质量**",
+        "- 分析 Python/TypeScript/Go/Java/Rust/C#/PHP 代码",
+        "- OWASP Top 10 安全检查",
+        "- 提供修复建议",
+        "",
+        "**PRD 审查**",
+        "- 专家级技术可行性评估",
+        "- 业务价值分析",
+        "",
+        "**Skills 管理**",
+        "- 查看已安装 Skills",
+        "",
+        "**使用示例**",
+        '- "分析 /path/to/project 的代码质量"',
+        '- "检查安全漏洞"',
+        '- "审查这个 PRD: ..."',
+    ]
+    return "\n".join(lines)
 
 
 def generate_default(prompt: str) -> str:
