@@ -1,115 +1,90 @@
 """
 web-coding - AI Code Agent Platform
-类似 Codex 的 agent 工作台
+类似 Codex 的简洁对话式界面
 """
 import streamlit as st
 import sys
 from pathlib import Path
 
-# 页面配置
+# 页面配置 - 全屏模式，无边框
 st.set_page_config(
-    page_title="Web Coding Agent",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    page_title="Web Coding",
+    page_icon="⚡",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
-# 自定义样式
+# 全局样式
 st.markdown("""
 <style>
-/* Main theme */
-:root {
-  --bg-primary: #0F172A;
-  --bg-secondary: #1E293B;
-  --accent: #38BDF8;
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-}
-
-/* Override Streamlit defaults */
+/* 全屏背景 */
 .stApp {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background: linear-gradient(180deg, #0D1117 0%, #161B22 100%);
+  color: #E6EDF3;
 }
 
-/* Sidebar styling */
-[data-testid="stSidebar"] {
-  background-color: var(--bg-secondary);
-  border-right: 1px solid #334155;
+/* 隐藏 Streamlit 默认元素 */
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
+[data-testid="stSidebar"] {display: none !important;}
+
+/* 主容器 */
+.main-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
 }
 
-[data-testid="stSidebar"] .stMarkdown {
-  color: var(--text-primary);
+/* 顶部标题 */
+.header {
+  text-align: center;
+  margin-bottom: 40px;
 }
 
-/* Main content */
-main {
-  background-color: var(--bg-primary);
+.header-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
 }
 
-/* Buttons */
-.stButton > button {
-  background-color: var(--accent);
-  color: var(--bg-primary);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+.header-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.5px;
 }
 
-.stButton > button:hover {
-  opacity: 0.9;
+.header-subtitle {
+  font-size: 16px;
+  color: #8B949E;
+  margin-top: 8px;
 }
 
-/* Chat input */
-.stChatInput {
-  background-color: var(--bg-secondary);
-  border: 1px solid #334155;
-  border-radius: 12px;
+/* 消息区域 */
+.messages {
+  min-height: 300px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 20px 0;
 }
 
-/* Text colors */
-.stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-  color: var(--text-primary);
-}
-
-/* Quick action chips */
-.quick-action {
-  display: inline-block;
-  padding: 6px 14px;
-  margin: 4px;
-  background: #334155;
-  border: 1px solid #475569;
-  border-radius: 20px;
-  color: #94A3B8;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.quick-action:hover {
-  background: var(--accent);
-  color: var(--bg-primary);
-  border-color: var(--accent);
-}
-
-/* Message bubbles */
 .message {
   display: flex;
-  gap: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  background: #1E293B;
+  gap: 16px;
+  margin-bottom: 24px;
+  animation: fadeIn 0.2s ease;
 }
 
-.message-user {
-  background: #334155;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .message-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,65 +93,148 @@ main {
 }
 
 .message-user .message-avatar {
-  background: #475569;
+  background: #21262D;
+  border: 1px solid #30363D;
 }
 
 .message-assistant .message-avatar {
-  background: linear-gradient(135deg, #38BDF8, #818CF8);
+  background: linear-gradient(135deg, #1F6FFB 0%, #58A6FF 100%);
 }
 
-/* Stats cards */
-.stat-card {
-  background: #1E293B;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
+.message-content {
+  flex: 1;
+  padding-top: 6px;
 }
 
-.stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #38BDF8;
+.message-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #E6EDF3;
+  white-space: pre-wrap;
 }
 
-.stat-label {
+.message-text code {
+  background: #21262D;
+  border: 1px solid #30363D;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  color: #94A3B8;
-  margin-top: 4px;
+  color: #79C0FF;
 }
 
-/* Empty state */
+.message-text pre {
+  background: #161B22;
+  border: 1px solid #30363D;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.message-text pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #E6EDF3;
+}
+
+/* 输入区域 */
+.input-area {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, #0D1117 60%, transparent);
+  padding: 20px 0 10px;
+}
+
+.input-container {
+  background: #161B22;
+  border: 1px solid #30363D;
+  border-radius: 16px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.input-container:focus-within {
+  border-color: #1F6FFB;
+}
+
+/* 空状态 */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   text-align: center;
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #38BDF8, #818CF8);
-  border-radius: 16px;
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #1F6FFB 0%, #58A6FF 100%);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  margin-bottom: 16px;
+  font-size: 32px;
+  margin-bottom: 20px;
 }
 
 .empty-title {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
+  color: #FFFFFF;
   margin-bottom: 8px;
 }
 
 .empty-subtitle {
-  font-size: 15px;
-  color: #94A3B8;
+  font-size: 16px;
+  color: #8B949E;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+/* 功能卡片 */
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 40px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.feature-card {
+  background: #161B22;
+  border: 1px solid #30363D;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.feature-card:hover {
+  border-color: #1F6FFB;
+  transform: translateY(-2px);
+}
+
+.feature-icon {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.feature-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #E6EDF3;
+  margin-bottom: 4px;
+}
+
+.feature-desc {
+  font-size: 12px;
+  color: #8B949E;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -186,7 +244,7 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "scripts"))
 
-# 导入核心模块
+# 导入模块
 try:
     from skill_registry import SkillRegistry
     from skill_runner import SkillRunner
@@ -196,164 +254,113 @@ except ImportError:
 
 
 def main():
-    # 初始化
-    if 'registry' not in st.session_state:
-        if SkillRegistry:
-            st.session_state.registry = SkillRegistry()
-        else:
-            st.session_state.registry = None
-    if 'runner' not in st.session_state:
-        if SkillRunner and st.session_state.registry:
-            st.session_state.runner = SkillRunner(st.session_state.registry)
-        else:
-            st.session_state.runner = None
+    # 初始化 session state
+    init_state()
+    
+    # 渲染界面
+    render_header()
+    render_messages()
+    render_input()
+
+
+def init_state():
+    """初始化会话状态"""
     if 'messages' not in st.session_state:
         st.session_state.messages = []
-    
-    # 渲染布局
-    render_layout()
+    if 'registry' not in st.session_state:
+        st.session_state.registry = SkillRegistry() if SkillRegistry else None
+    if 'runner' not in st.session_state:
+        st.session_state.runner = SkillRunner(st.session_state.registry) if SkillRunner and st.session_state.registry else None
 
 
-def render_layout():
-    """渲染主布局"""
-    render_sidebar()
-    render_main()
+def render_header():
+    """渲染顶部标题"""
+    st.markdown("""
+    <div class="header">
+        <div class="header-icon">⚡</div>
+        <h1 class="header-title">Web Coding</h1>
+        <p class="header-subtitle">AI 编码助手 - 输入你的需求，让 AI 帮你完成</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
-def render_sidebar():
-    """渲染侧边栏"""
-    st.markdown("### 🤖 Web Coding")
-    st.markdown("---")
-    
-    # 导航
-    st.markdown("**导航**")
-    nav_items = [
-        ("💬", "对话", True),
-        ("📊", "历史记录", False),
-        ("⚙️", "设置", False),
-    ]
-    for icon, text, active in nav_items:
-        if active:
-            st.markdown(f"{icon} **{text}**")
+def render_messages():
+    """渲染消息列表"""
+    messages_container = st.container()
+    with messages_container:
+        if st.session_state.messages:
+            for msg in st.session_state.messages:
+                render_message(msg)
         else:
-            st.markdown(f"{icon} {text}")
-    
-    st.markdown("---")
-    
-    # Skills
-    st.markdown("**已安装 Skills**")
-    if st.session_state.registry:
-        skills = st.session_state.registry.list_skills()
-        for skill in skills:
-            status = "✅" if skill.get("enabled") else "❌"
-            st.markdown(f"{status} {skill['name']}")
-    else:
-        st.markdown("❌ code-quality-guard")
-        st.markdown("✅ biz-delivery")
-    
-    st.markdown("---")
-    
-    # 快速操作
-    st.markdown("**快速操作**")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🛡️ 代码分析", use_container_width=True):
-            process_prompt("分析代码质量")
-    with col2:
-        if st.button("🔒 安全检查", use_container_width=True):
-            process_prompt("检查安全漏洞")
-    
-    col3, col4 = st.columns(2)
-    with col3:
-        if st.button("📋 PRD 审查", use_container_width=True):
-            process_prompt("审查 PRD")
-    with col4:
-        if st.button("📦 列出 Skills", use_container_width=True):
-            process_prompt("列出所有 Skills")
-    
-    st.markdown("---")
-    
-    if st.button("🗑️ 清空对话", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
-
-
-def render_main():
-    """渲染主内容区"""
-    # Header
-    st.markdown("## Web Coding Agent")
-    st.markdown("输入你的需求，AI 将调用相应的 Skills 完成编码任务")
-    st.markdown("---")
-    
-    # Quick actions
-    st.markdown("**快速开始：**")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if st.button("🛡️ 分析代码质量", use_container_width=True):
-            process_prompt("分析代码质量")
-    with col2:
-        if st.button("🔒 安全检查", use_container_width=True):
-            process_prompt("检查安全漏洞")
-    with col3:
-        if st.button("📋 PRD 审查", use_container_width=True):
-            process_prompt("审查 PRD")
-    with col4:
-        if st.button("📦 列出 Skills", use_container_width=True):
-            process_prompt("列出所有 Skills")
-    
-    st.markdown("")
-    
-    # Chat messages
-    if st.session_state.messages:
-        for msg in st.session_state.messages:
-            render_message(msg)
-    else:
-        render_empty_state()
-    
-    st.markdown("---")
-    
-    # Input area
-    prompt = st.chat_input("输入你的需求，例如：分析 biz-delivery 代码质量...")
-    if prompt:
-        response = process_task(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        st.rerun()
+            render_empty_state()
 
 
 def render_message(msg: dict):
     """渲染单条消息"""
     is_user = msg["role"] == "user"
     avatar = "👤" if is_user else "🤖"
-    role = "你" if is_user else "Web Coding Agent"
     
-    with st.container():
-        st.markdown(f"""
-        <div style="display: flex; gap: 12px; padding: 16px; margin-bottom: 12px; border-radius: 12px; background: {'#334155' if is_user else '#1E293B'};">
-            <div style="width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: {'#475569' if is_user else 'linear-gradient(135deg, #38BDF8, #818CF8)'};">
-                {avatar}
-            </div>
-            <div style="flex: 1;">
-                <div style="font-size: 12px; color: #94A3B8; margin-bottom: 6px; font-weight: 600;">{role}</div>
-                <div style="font-size: 15px; line-height: 1.6;">{msg['content']}</div>
-            </div>
+    col1, col2 = st.columns([1, 10])
+    with col1:
+        st.markdown(f'''
+        <div style="width: 36px; height: 36px; border-radius: 50%; 
+                    background: {'#21262D' if is_user else 'linear-gradient(135deg, #1F6FFB, #58A6FF)'};
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 18px;">
+            {avatar}
         </div>
-        """, unsafe_allow_html=True)
+        ''', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f'''
+        <div style="font-size: 15px; line-height: 1.7; color: #E6EDF3; white-space: pre-wrap;">
+            {msg['content']}
+        </div>
+        ''', unsafe_allow_html=True)
 
 
 def render_empty_state():
     """渲染空状态"""
     st.markdown("""
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center;">
-        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #38BDF8, #818CF8); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px;">
-            🤖
-        </div>
-        <div style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">你好，我是 Web Coding Agent</div>
-        <div style="font-size: 15px; color: #94A3B8; max-width: 400px;">
-            我可以帮你分析代码质量、检查安全漏洞、审查 PRD，或者管理你的 Skills
+    <div class="empty-state">
+        <div class="empty-icon">🤖</div>
+        <div class="empty-title">你好，我是 Web Coding Agent</div>
+        <div class="empty-subtitle">我可以帮你分析代码质量、检查安全漏洞、审查 PRD，或者管理你的 Skills</div>
+        
+        <div class="features">
+            <div class="feature-card" onclick="setPrompt('分析代码质量')">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">代码质量分析</div>
+                <div class="feature-desc">Python/TS/Go/Java/Rust</div>
+            </div>
+            <div class="feature-card" onclick="setPrompt('检查安全漏洞')">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title">安全检查</div>
+                <div class="feature-desc">OWASP Top 10 扫描</div>
+            </div>
+            <div class="feature-card" onclick="setPrompt('审查 PRD')">
+                <div class="feature-icon">📋</div>
+                <div class="feature-title">PRD 审查</div>
+                <div class="feature-desc">专家级技术评估</div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+def render_input():
+    """渲染输入区域"""
+    st.markdown('<div class="input-area">', unsafe_allow_html=True)
+    
+    prompt = st.chat_input("输入你的需求，例如：分析 biz-delivery 代码质量...", key="main_input")
+    
+    if prompt:
+        response = process_task(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def process_task(prompt: str) -> str:
@@ -379,7 +386,7 @@ def run_code_analysis(prompt: str) -> str:
     path = extract_path(prompt) or str(Path.home() / "biz-delivery")
     
     if not st.session_state.runner:
-        return f"⚠️ 请安装 code-quality-guard skill\n\n路径: `{path}`"
+        return f"⚠️ 请安装 code-quality-guard skill\n\n目标路径: `{path}`"
     
     result = st.session_state.runner.analyze_directory(path, "python")
     
@@ -391,22 +398,20 @@ def run_code_analysis(prompt: str) -> str:
     findings = result.get('findings', [])
     
     lines = [
-        f"## 📊 代码质量分析结果",
+        f"## 📊 代码质量分析",
         f"",
-        f"**目标路径**: `{path}`",
+        f"**路径**: `{path}`",
+        f"**得分**: **{score}/100**",
         f"",
-        f"**质量得分**: **{score}/100**",
-        f"",
-        f"**统计**: 错误 {summary.get('errors', 0)} | 警告 {summary.get('warnings', 0)}",
     ]
     
     if findings:
-        lines.append("\n### 🔍 发现的问题\n")
+        lines.append("### 🔍 发现问题")
         for f in findings[:5]:
             icon = "🔴" if f.get('severity') == 'error' else "🟡"
-            lines.append(f"- {icon} **{f.get('message', 'Unknown')}** (Line {f.get('line', '?')})")
+            lines.append(f"- {icon} {f.get('message', 'Unknown')} (L{f.get('line', '?')})")
     else:
-        lines.append("\n✅ 未发现重大问题!")
+        lines.append("✅ 未发现重大问题")
     
     return "\n".join(lines)
 
@@ -416,49 +421,46 @@ def run_security_check(prompt: str) -> str:
     path = extract_path(prompt) or str(Path.home() / "biz-delivery")
     
     if not st.session_state.runner:
-        return f"⚠️ 请安装 code-quality-guard skill\n\n路径: `{path}`"
+        return f"⚠️ 请安装 code-quality-guard skill"
     
     result = st.session_state.runner.run_security_check(path)
     
     if "error" in result:
         return f"❌ 检查失败: {result['error']}"
     
-    lines = [f"## 🔒 OWASP 安全检查结果", f"", f"**目标路径**: `{path}`", ""]
+    lines = [f"## 🔒 OWASP 安全检查", f"", f"**路径**: `{path}`", ""]
     
     for item in result.get('checks', []):
         icon = "✅" if item.get('passed') else "❌"
         lines.append(f"- {icon} **{item.get('name', 'Unknown')}**")
-        if not item.get('passed'):
-            lines.append(f"  - ⚠️ {item.get('detail', '')}")
     
-    lines.append(f"\n**风险评分**: {result.get('risk_score', 0)}/100")
     return "\n".join(lines)
 
 
 def run_prd_review(prompt: str) -> str:
     """运行 PRD 审查"""
+    import subprocess
     biz_delivery_path = Path("/Users/yanping.ma/biz-delivery")
     expert_script = biz_delivery_path / "scripts" / "expert_system.py"
     
     if not expert_script.exists():
-        return "❌ biz-delivery skill 未找到，请先安装"
+        return "❌ biz-delivery skill 未找到"
     
     prd_content = extract_prd_content(prompt)
     if not prd_content:
-        return "⚠️ 请提供 PRD 内容，例如:\n\n```\n# 项目名称\n## 背景\n...\n## 功能需求\n...\n```"
+        return "⚠️ 请提供 PRD 内容"
     
-    import subprocess
     try:
         result = subprocess.run(
             ["python3", str(expert_script), "review", prd_content],
             capture_output=True, text=True, timeout=60
         )
         if result.returncode == 0:
-            return f"## 📋 PRD 审查结果\n\n{result.stdout}"
+            return f"## 📋 PRD 审查结果\n\n{result.stdout[:500]}"
         else:
-            return f"❌ 审查失败: {result.stderr}"
+            return f"❌ 审查失败: {result.stderr[:200]}"
     except Exception as e:
-        return f"❌ 审查异常: {str(e)}"
+        return f"❌ 异常: {str(e)[:200]}"
 
 
 def run_skill_management() -> str:
@@ -467,63 +469,50 @@ def run_skill_management() -> str:
         return "⚠️ Registry 未初始化"
     
     skills = st.session_state.registry.list_skills()
-    lines = ["## 📦 已安装的 Skills\n", ""]
+    lines = ["## 📦 已安装 Skills\n", ""]
     
     for s in skills:
         status = "✅ 启用" if s.get("enabled") else "❌ 禁用"
-        langs = s.get("metadata", {}).get("languages", [])
         lines.append(f"- **{s['name']}** v{s.get('version', '?')} - {status}")
-        if langs:
-            lines.append(f"  - 支持语言: {', '.join(langs)}")
-        lines.append(f"  - {s.get('description', 'N/A')}\n")
+        lines.append(f"  {s.get('description', 'N/A')}\n")
     
     return "\n".join(lines)
 
 
 def generate_capabilities_response() -> str:
-    lines = [
-        "## 🤖 Web Coding Agent 能力",
-        "",
-        "我可以帮你完成以下编码任务：",
-        "",
-        "### 🛡️ 代码质量",
-        "- 分析 Python/TypeScript/Go/Java/Rust/C#/PHP 代码",
-        "- OWASP Top 10 安全检查",
-        "- 识别代码坏味道",
-        "- 提供修复建议",
-        "",
-        "### 📋 PRD 审查",
-        "- 专家级 PRD 审查",
-        "- 技术可行性评估",
-        "- 业务价值分析",
-        "",
-        "### 📦 Skills 管理",
-        "- 列出已安装 Skills",
-        "- 安装/卸载 Skills",
-        "- 查看 Skill 详情",
-        "",
-        "### 💬 使用示例",
-        '- 输入 "分析 /Users/yanping.ma/biz-delivery 的代码质量"',
-        '- 输入 "检查 /path/to/project 的安全漏洞"',
-        '- 输入 "审查这个 PRD: ..."',
-        '- 输入 "列出所有已安装的 Skills"',
-    ]
-    return "\n".join(lines)
+    return """## 🤖 我能做什么
+
+**代码质量**
+- 分析 Python/TypeScript/Go/Java/Rust/C#/PHP 代码
+- OWASP Top 10 安全检查
+- 识别代码坏味道并提供修复建议
+
+**PRD 审查**
+- 专家级 PRD 技术可行性评估
+- 业务价值分析
+- 架构建议
+
+**Skills 管理**
+- 查看已安装 Skills
+- 管理 Skill 状态
+
+**使用示例**
+- "分析 /path/to/project 的代码质量"
+- "检查安全漏洞"
+- "审查这个 PRD: ..."
+"""
 
 
 def generate_default_response(prompt: str) -> str:
-    lines = [
-        f"收到你的需求: \"{prompt}\"",
-        "",
-        "我可以帮你：",
-        "- 🛡️ **代码质量分析** - 调用 code-quality-guard",
-        "- 🔒 **安全检查** - OWASP Top 10 扫描",
-        "- 📋 **PRD 审查** - 专家系统审查",
-        "- 📦 **Skills 管理** - 查看/安装 Skills",
-        "",
-        "请提供更多细节，或选择具体功能。",
-    ]
-    return "\n".join(lines)
+    return f'''收到你的需求: "{prompt}"
+
+我可以帮你：
+• 🛡️ 代码质量分析
+• 🔒 安全检查  
+• 📋 PRD 审查
+• 📦 Skills 管理
+
+请提供更多细节。'''
 
 
 def extract_path(prompt: str) -> str:
@@ -536,14 +525,6 @@ def extract_prd_content(prompt: str) -> str:
     import re
     code_blocks = re.findall(r'```[\s\S]*?```', prompt)
     return code_blocks[0].replace('```', '').strip() if code_blocks else prompt
-
-
-def process_prompt(prompt: str):
-    """处理快速操作"""
-    response = process_task(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    st.rerun()
 
 
 if __name__ == "__main__":
