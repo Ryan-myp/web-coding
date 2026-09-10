@@ -53,7 +53,7 @@ def main():
 
 def render():
     # 顶栏
-    col_brand, col Spacer, col_actions = st.columns([1, 4, 2])
+    col_brand, col_space, col_actions = st.columns([1, 4, 2])
     with col_brand:
         st.markdown("**⚡ Web Coding**")
     with col_actions:
