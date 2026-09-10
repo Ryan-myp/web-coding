@@ -1,0 +1,24 @@
+{
+  "default_skills": [
+    {
+      "name": "code-quality-guard",
+      "description": "代码质量检查 - OWASP 安全 + 多语言 AST 分析",
+      "source": "https://github.com/Ryan-myp/coding",
+      "path_in_repo": ".agents/skills/code-quality-guard",
+      "version": "7.11",
+      "enabled": true
+    },
+    {
+      "name": "biz-delivery",
+      "description": "PRD → Test Case 端到端业务交付",
+      "source": "https://github.com/Ryan-myp/coding",
+      "path_in_repo": ".",
+      "version": "1.0",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "agents_skills": "~/.agents/skills",
+    "local_skills": "./skills"
+  }
+}
