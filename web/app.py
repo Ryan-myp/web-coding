@@ -23,39 +23,33 @@ def main():
     if 'runner' not in st.session_state:
         st.session_state.runner = SkillRunner(st.session_state.registry) if SkillRunner and st.session_state.registry else None
     
-    # 标题
     st.title("⚡ Web Coding Agent")
-    st.caption("AI 编码助手 - 输入需求，自动调用 Skills")
+    st.caption("AI 编码助手 - 自动调用 Skills 完成编码任务")
     st.divider()
     
-    # 三栏
-    col_left, col_mid, col_right = st.columns([240, 1, 280])
+    c1, c2, c3 = st.columns([240, 1, 280])
     
-    # 左栏 - 导航
-    with col_left:
-        st.header("🛠️ Skills")
+    with c1:
+        st.header("Skills")
         st.markdown("**🛡️ 代码质量**")
         st.markdown("**🔒 安全检查**")
         st.markdown("**📋 PRD 审查**")
-        
-        st.header("📜 历史")
-        st.markdown("* 分析 biz-delivery 代码")
+        st.header("历史")
+        st.markdown("* 分析代码质量")
         st.markdown("* 检查安全漏洞")
     
-    # 中栏 - 聊天
-    with col_mid:
+    with c2:
         render_chat()
     
-    # 右栏 - 执行
-    with col_right:
-        st.header("⚙️ 执行")
+    with c3:
+        st.header("执行")
         st.markdown("**状态**: 待命")
-        st.markdown("发送请求后显示 Tool 执行状态")
 
 def render_chat():
     if st.session_state.messages:
         for msg in st.session_state.messages:
-            st.chat_message(msg["role"]).write(msg["content"])
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
     else:
         with st.chat_message("assistant"):
             st.markdown("**你好，我是 Web Coding Agent**")
@@ -89,8 +83,7 @@ def render_chat():
 def handle_prompt(prompt):
     p = prompt.lower()
     if any(k in p for k in ["代码质量", "analyze"]):
-        path = extract_path(prompt) or "/Users/yanping.ma/biz-delivery"
-        return f"**路径**: `{path}`\n\n正在分析..."
+        return f"**路径**: `{extract_path(prompt) or '/Users/yanping.ma/biz-delivery'}`\n\n正在分析..."
     elif any(k in p for k in ["安全检查", "security"]):
         return "**安全检查完成** ✅"
     elif any(k in p for k in ["prd", "需求"]):
