@@ -24,7 +24,7 @@ def main():
         st.session_state.runner = SkillRunner(st.session_state.registry) if SkillRunner and st.session_state.registry else None
     
     st.title("⚡ Web Coding Agent")
-    st.caption("AI 编码助手 - 自动调用 Skills 完成编码任务")
+    st.caption("AI 编码助手 - 输入需求，自动调用 Skills")
     st.divider()
     
     c1, c2, c3 = st.columns([240, 1, 280])
@@ -83,7 +83,7 @@ def render_chat():
 def handle_prompt(prompt):
     p = prompt.lower()
     if any(k in p for k in ["代码质量", "analyze"]):
-        return f"**路径**: `{extract_path(prompt) or '/Users/yanping.ma/biz-delivery'}`\n\n正在分析..."
+        return f"**路径**: `{extract_path(prompt) or '/Users/yanping.ma/biz-delivery'}`"
     elif any(k in p for k in ["安全检查", "security"]):
         return "**安全检查完成** ✅"
     elif any(k in p for k in ["prd", "需求"]):
